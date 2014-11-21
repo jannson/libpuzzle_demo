@@ -100,6 +100,24 @@ def search():
 
     return render_template('index.html', result_images=similar_images, result_title="Search Result")
 
+@app.route("/getid", methods=['GET'])
+def getid():
+    id = request.args.get('id')
+    cursor = get_cursor()
+    image_path = os.path.join('./static/%s' % app.config['PUZZLE_IMAGE_DIR'], id)
+    vec_str = ''.join(map(lambda n: str(n), puzzle.get_cvec_from_file(image_path)))
+    print vec_str
+    vec_strs = [("%s__%s" % (i, vec_str[i: 10+i])) for i in range(100)]
+    print vec_strs
+
+    place_holder = '?'
+    place_holders = ','.join(len(vec_strs)*[place_holder])
+    print place_holders
+
+    cursor.execute('select distinct image.file_path, image.name, image.description from img_sig_words isw left join image on isw.image_id=image.image_id where sig_word in (%s) ' % place_holders, vec_strs)
+    similar_images = cursor.fetchall()
+
+    return render_template('index.html', result_images=similar_images, result_title="Search Result")
 
 if __name__ == "__main__":
     app.run()
